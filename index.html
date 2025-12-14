@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Servitec</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-icon.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+<style>
+body{margin:0;font-family:-apple-system;background:#f2f2f7}
+header{text-align:center;padding:20px}
+header img{width:150px}
+.card{background:#fff;margin:12px;padding:15px;border-radius:16px}
+input,select{width:100%;padding:14px;margin-top:10px;border-radius:12px;border:1px solid #d1d1d6}
+button{width:100%;margin-top:10px;padding:14px;border:none;border-radius:14px;background:#007aff;color:#fff;font-weight:600}
+.small{background:#e5e5ea;color:#000}
+.hidden{display:none}
+.ok{color:#34c759;font-weight:600}
+.bad{color:#ff3b30;font-weight:600}
+.cliente{border-bottom:1px solid #e5e5ea;padding:12px 0}
+.alerta{background:#fff3cd;padding:12px;border-radius:12px;margin:12px;font-weight:600}
+</style>
+</head>
+
+<body>
+
+<div id="login" class="card">
+<h3>🔐 Servitec</h3>
+<input id="user" placeholder="Usuario">
+<input id="pass" type="password" placeholder="Contraseña">
+<button onclick="login()">Entrar</button>
+</div>
+
+<div id="app" class="hidden">
+
+<header>
+<img src="logo.png">
+</header>
+
+<div id="alertas"></div>
+
+<div class="card">
+<h4>➕ Nuevo Cliente</h4>
+<input id="cliente" placeholder="Cliente">
+<input id="telefono" placeholder="Teléfono">
+<input id="direccion" placeholder="Dirección">
+<input type="date" id="fecha">
+<select id="frecuencia">
+<option value="3">Cada 3 meses</option>
+<option value="6">Cada 6 meses</option>
+<option value="12">Cada 1 año</option>
+</select>
+<button onclick="agregar()">Guardar</button>
+</div>
+
+<div class="card">
+<h4>📋 Clientes</h4>
+<div id="lista"></div>
+<button onclick="exportar()">📤 Exportar Excel</button>
+<button class="small" onclick="cambiarClave()">🔐 Cambiar contraseña</button>
+</div>
+
+</div>
+
+<script>
+let USER="admin";
+let PASS=localStorage.getItem("clave")||"1234";
+let clientes=JSON.parse(localStorage.getItem("clientes"))||[];
+
+function login(){
+ if(user.value===USER && pass.value===PASS){
+  login.style.display="none";
+  app.classList.remove("hidden");
+  mostrar();
+ } else alert("Datos incorrectos");
+}
+
+function guardar(){
+ localStorage.setItem("clientes",JSON.stringify(clientes));
+ localStorage.setItem("clave",PASS);
+}
+
+function vencido(f,m){
+ let d=new Date(f);
+ d.setMonth(d.getMonth()+m);
+ return d<=new Date();
+}
+
+function mostrar(){
+ lista.innerHTML="";
+ alertas.innerHTML="";
+ let p=0;
+
+ clientes.forEach((c,i)=>{
+  let v=vencido(c.fecha,c.frecuencia);
+  if(v) p++;
+
+  lista.innerHTML+=`
+  <div class="cliente">
+  <b>${c.cliente}</b><br>
+  📞 ${c.telefono}<br>
+  📍 ${c.direccion}<br>
+  📅 ${c.fecha} · ${c.frecuencia}m<br>
+  <span class="${v?'bad':'ok'}">${v?'MANTENIMIENTO':'OK'}</span><br><br>
+
+  <button onclick="llamar('${c.telefono}')">📞 Llamar</button>
+
+  ${v ? `<button onclick="whatsapp('${c.cliente}','${c.telefono}')">💬 WhatsApp Mantenimiento</button>` : ``}
+
+  <button onclick="mapa('${c.direccion}')">📍 Ubicación</button>
+  <button class="small" onclick="borrar(${i})">Eliminar</button>
+  </div>`;
+ });
+
+ if(p>0){
+  alertas.innerHTML=`<div class="alerta">⚠ ${p} mantenimientos pendientes</div>`;
+ }
+}
+
+function agregar(){
+ clientes.push({
+  cliente:cliente.value,
+  telefono:telefono.value,
+  direccion:direccion.value,
+  fecha:fecha.value,
+  frecuencia:+frecuencia.value
+ });
+ guardar(); mostrar();
+}
+
+function borrar(i){
+ clientes.splice(i,1);
+ guardar(); mostrar();
+}
+
+function llamar(t){location.href=`tel:${t}`}
+
+function whatsapp(cliente,telefono){
+ let msg=`Hola ${cliente}, le escribe SERVITEC Servicios Técnicos. Su mantenimiento de aire acondicionado está pendiente. ¿Desea agendar su servicio? ❄️🔧`;
+ window.open(`https://wa.me/1${telefono}?text=${encodeURIComponent(msg)}`);
+}
+
+function mapa(d){window.open(`https://maps.apple.com/?q=${encodeURIComponent(d)}`)}
+
+function exportar(){
+ let csv="Cliente,Telefono,Direccion,Fecha,Frecuencia\n";
+ clientes.forEach(c=>{
+  csv+=`${c.cliente},${c.telefono},${c.direccion},${c.fecha},${c.frecuencia}\n`;
+ });
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+ a.download="servitec_clientes.csv";
+ a.click();
+}
+
+function cambiarClave(){
+ let n=prompt("Nueva contraseña:");
+ if(n){PASS=n;guardar();alert("Contraseña cambiada");}
+}
+
+if("serviceWorker" in navigator){
+ navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
