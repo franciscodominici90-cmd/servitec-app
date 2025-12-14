@@ -60,19 +60,6 @@ button{width:100%;margin-top:10px;padding:14px;border:none;border-radius:14px;ba
 
 </div>
 
-<script>
-let USER="admin";
-let PASS=localStorage.getItem("clave")||"1234";
-let clientes=JSON.parse(localStorage.getItem("clientes"))||[];
-
-function login(){
- if(user.value===USER && pass.value===PASS){
-  login.style.display="none";
-  app.classList.remove("hidden");
-  mostrar();
- } else alert("Datos incorrectos");
-}
-
 function guardar(){
  localStorage.setItem("clientes",JSON.stringify(clientes));
  localStorage.setItem("clave",PASS);
@@ -159,8 +146,10 @@ function cambiarClave(){
 if("serviceWorker" in navigator){
  navigator.serviceWorker.register("service-worker.js");
 }
+  mostrar();
 </script>
 
 </body>
 </html>
+
 
